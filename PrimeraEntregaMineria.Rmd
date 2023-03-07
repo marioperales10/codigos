@@ -1,0 +1,268 @@
+---
+title: "PrimeraEntregaMineria"
+author: "Mario Perales Díaz"
+date: "2023-02-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+# 1. Accedemos al directorio Minería de Datos 2 mediante la consola. Importar los datos:
+```{r}
+
+setwd("/Users/Marioperalesdiaz/Desktop/Mineria de datos 2")
+datos <- read.table(file = "datos_p1.csv", 
+                    sep = ";",  dec = " ", header = T)
+## Visualizamos datos (observamos todos, los 5 primeros y los 5 últimos, respectivamente):
+View(datos)
+head(datos, 5)
+tail(datos,5)
+## Podemos obtener un resumen de las variables del conjunto (algunas tipo numéricas y otras tipo character):
+summary(datos)
+
+```
+
+# 1.2 Conversión de variables y filtrado de datos (Limpieza y filtrado). Las variables tipo character (REst,RPro, Her2, Estadio, NodAfec, Grado y Fenotipo) debemos importarlas como factores.
+
+```{r}
+datos <- read.table(file = "datos_p1.csv", 
+                    sep = ";", dec = ",", header = T, stringsAsFactors = T)
+
+## Visualizamos los datos para comprobar si se ha realizado el cambio
+View(datos)
+head(datos,10)
+summary(datos)
+class(datos$Edad)
+
+## Podemos ver los diferentes valorez que toman las variables categóricas y resumirlas, por ejemplo:
+
+levels(datos$REst)
+table(datos$REst)
+levels(datos$Fenotipo)
+table(datos$Fenotipo)
+```
+
+
+```{r}
+## Podemos representar las variables gráficamente:
+barplot(table(datos$Muestra))
+barplot(table(datos$Edad))
+barplot(table(datos$REst))
+barplot(table(datos$RPro))
+barplot(table(datos$Her2))
+barplot(table(datos$Estadio))
+barplot(table(datos$NodAfec))
+barplot(table(datos$Grado))
+barplot(table(datos$Fenotipo))
+pie(table(datos$Grado))
+```
+
+
+```{r}
+
+## A los valores numéricos podemos aplicarles medidas de tendencia central:
+### Media
+mean(datos$Edad)
+###  Mediana
+median(datos$Edad)
+### Desviación estándar
+sd(datos$Edad)
+
+### Al ser una variable numérica podemos representarla de forma gráfica con el histograma
+hist(datos$Edad, main = "Edad", ylab = "Frecuencia", xlab = "Edad")
+
+summary(datos$Edad)
+
+# Análisis de normalidad de una distribución
+## Podemos utilizar la representación gráfica, aplicar un test de contraste de hipótesis (para distribuciones normales, no es nuestro caso) y medidas estadísticas como la mediana, cuartiles y percentiles, y el rango intercuartílico
+
+q1 <- quantile(datos$Edad, c(0.25), type = 6)
+q2 <- quantile(datos$Edad, c(0.5), type = 6)
+q3 <- quantile(datos$Edad, c(0.75), type = 6)
+q1
+q2
+q3
+
+```
+```{r}
+# Podemos convertir la variable Edad en categórica con la función cut, agrupando sus datos en intervalos previamente determinados. PCR la convertimos en factor:
+
+datos$Edad2 <- cut(datos$Edad, breaks = c(0,40,60,max(datos$Edad)))
+datos$Edad2[1:15]
+
+datos$PCR <- as.factor(datos$PCR)
+summary(datos)
+
+```
+
+
+
+
+# 2. Análisis Bivariante 
+```{r}
+## A continuación vamos a estudiar si existe relación entre dos variables de nuestros datos, sin importar si son categóricas o numéricas. También podemos representar la relación mediante diagrama de barras.
+
+# ASOCIACIÓN ENTRE DOS VARIABLES CATEGÓRICAS:
+
+## RPro y PCR
+table(datos$RPro, datos$PCR)
+barplot(table(datos$RPro, datos$Fenotipo), cex.names = 0.7, las = 2, legend.text = TRUE)
+
+## Her2 y Estadio
+table(datos$Her2, datos$Estadio)
+barplot(table(datos$Her2, datos$Estadio),beside = TRUE, legend.text = TRUE, horiz = T)
+
+## Fenotipo y PCR
+table(datos$Fenotipo, datos$PCR)
+barplot(table(datos$PCR, datos$Fenotipo), beside = TRUE, legend.text = TRUE, horiz = TRUE)
+
+## REst y Rpro
+table(datos$REst,datos$RPro)
+barplot(table(datos$REst,datos$RPro), beside = TRUE, legend.text = TRUE, horiz = TRUE)
+
+## REst y PCR
+table(datos$REst, datos$RPro)
+barplot(table(datos$REst,datos$PCR), beside = TRUE, legend.text = TRUE, horiz = TRUE)
+
+## Grado y PCR
+table(datos$Grado,datos$PCR)
+
+## REst y NodAfec
+table(datos$REst,datos$NodAfec)
+
+## NodAfec y RPro
+table(datos$REst,datos$NodAfec)
+
+## Her2 y Grado
+table(datos$Her2,datos$Grado)
+
+# ASOCIACIÓN ENTRE VARIABLE CATEGÓRICA Y NUMÉRICA:
+
+boxplot(datos$Edad ~ datos$PCR)
+t.test(Edad ~ PCR, data = datos)
+summary(aov(Edad ~ PCR, data = datos))
+hist(datos$Edad)
+shapiro.test(datos$Edad)
+
+## Se acepta la hipótesis alternativa, ya que el p-valor es menor que 0.05, por lo tanto no sigue una distribución normal. Debemos de aplicar el test Wilcox entre dos variables independientes:
+
+wilcox.test(Edad ~ PCR, data = datos)
+
+
+# NIVEL DE ASOCIACIÓN ENTRE VARIABLES 
+## Con el objetivo de testear si el nivel de asociación entre estas se puede considerar estadísticamente significativo, se le aplica un test de contraste de hipótesis. Debemos crear una matriz para cada asociación, si esta tiene dimensión de 2 x 2 y la frec. observada < 5, utilizamos el test de fisher. Si la matriz tiene distinta dimensión (2 x K) pero frec < 5 utilizamos fisher, en caso contrario utilizamos el test de chi cuadrado:
+
+## RPRo y PCR :
+pcr.rpro.tab <- xtabs(~ RPro + PCR, data = datos)
+pcr.rpro.tab
+pcr.rpro.test <- fisher.test(pcr.rpro.tab)
+pcr.rpro.test
+### Se rechaza la hipótesis nula (independientes) por lo que son dependientes.
+
+## Edad y PCR (usamos la variable Edad2 agrupada en intervalos):
+pcr.edad.tab <- xtabs(~ Edad2 + PCR, data = datos)
+pcr.edad.tab
+pcr.edad.test <- fisher.test(pcr.edad.tab)
+pcr.edad.test
+### Aceptamos la hipótesis nula en este caso (p>0.05), por lo que son independientes.
+
+## Grado y PCR:
+grado.pcr.tab <- xtabs(~ Grado + PCR, data = datos)
+grado.pcr.tab
+grado.pcr.test <- fisher.test(grado.pcr.tab)
+grado.pcr.test
+### Rechazamos la hipótesis nula y aceptamos la alternativa, son variables depedientes.
+
+edad.grado.tab <- xtabs(~ Edad2 + Grado, data = datos)
+edad.grado.tab
+edad.grado.test <- fisher.test(edad.grado.tab)
+edad.grado.test
+###No podemos utilizar fisher ni chi cuadrado ya que la matriz asociada tiene dimensión 3x3. 
+
+## NodAfect y PCR: 
+nodafect.pcr.tab <- xtabs(~ NodAfec + PCR, data = datos)
+nodafect.pcr.tab
+nodafect.pcr <- fisher.test(nodafect.pcr.tab)
+nodafect.pcr
+### Son independientes.
+
+## Fenotipo y PCR:
+
+pcr.fenot.tab <- xtabs(~ Fenotipo + PCR, data = datos)
+pcr.fenot.tab
+pcr.fenot.test <- chisq.test(pcr.fenot.tab)
+pcr.fenot.test
+### En este caso no podemos utilizar fisher, por lo que utilizamos chi cuadrado. Rechazamos la hipótesis nula que establece este contraste, por lo que son dependientes.
+
+## Estadio y PCR:
+estadio.pcr.tab <- xtabs(~ Estadio + PCR, data = datos)
+estadio.pcr.tab 
+estadio.pcr.test <- fisher.test(estadio.pcr.tab)
+estadio.pcr.test
+### Son independientes
+
+## Her2 y PCR:
+her2.pcr.tab <- xtabs(~Her2 + PCR, data = datos)
+her2.pcr.tab
+her2.pcr.test <- fisher.test(her2.pcr.tab)
+her2.pcr.test
+### Son independientes
+
+## REst y PCR:
+rest.pcr.tab <- xtabs(~ REst + PCR, data = datos)
+rest.pcr.tab
+rest.pcr.test <- fisher.test(rest.pcr.tab)
+rest.pcr.test
+### Son dependientes
+
+
+```
+# 3. Análisis multivariante 
+```{r}
+## Cargamos la librería MASS con el objetivo de utilizar la función StepAIC:
+library(MASS)
+install.packages("dplyr")
+library(dplyr)
+
+## Realizamos una regresión logística. Para ello debemos eliminar los valores desconocidos (NA). Estos se presentan en las variables REst, RPRo, Her2, Grado y PCR, por lo que debemos seleccionarlas y aplicar el comando na.omit para eliminarlos. También eliminamos la columna Muestra ya que no vamos a trabajar con ella.
+selec <- select(datos, -Muestra)
+head(selec)
+datos2 <- na.omit(selec)
+## PCR = 1 (presencia de metástasis), datos con filtrado de na, binomial:
+rlog <- glm(PCR==1 ~ ., data = datos2, family = binomial("logit"))
+summary(rlog)
+
+## La función StepAIC puede ajustarse con 3 opciones distintas de selección de variables, backward, forward y both. Utilizaremos backward ya que con los dos restantes debe crearse un modelo vacío:
+
+rlog.b <- stepAIC(rlog, direction = "backward")
+
+##Con la función predict, acompañada del modelo generado anteriormente, podemos predecir la probabilidad de un cierto caso. Por ejemplo, la probabilidad de metástasis en un paciente de 50 años, con un determinado grado y fenotipo:
+
+ predict(rlog.b, newdata = data.frame(Edad = 50, Grado = 1, Fenotipo="Basal", Edad2="(40,60]"), type = "response")
+
+### Nos muestra que un paciente de 50 años, con grado del tumor = 1 y fenotipo basal presenta un 10% de probabilidad de desarrollar metástasis.
+
+```
+
